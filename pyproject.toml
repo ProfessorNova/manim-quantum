@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "manim-quantum"
+version = "0.1.0"
+description = "A Manim plugin for visualizing quantum computing concepts"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "manim-quantum contributors" }
+]
+keywords = ["manim", "quantum", "visualization", "quantum-computing", "animation"]
+dependencies = [
+    "manim>=0.18.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+pennylane = [
+    "pennylane>=0.35.0",
+]
+dev = [
+    "pytest>=7.0.0",
+]
+all = [
+    "manim-quantum[pennylane,dev]",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/manim_quantum"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/examples",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+packages = ["manim_quantum"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "D"]
+ignore = ["D100", "D104"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
