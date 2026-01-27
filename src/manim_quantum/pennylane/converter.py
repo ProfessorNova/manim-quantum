@@ -2,11 +2,23 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from manim_quantum.circuits.circuit import QuantumCircuit
     from manim_quantum.styles import QuantumStyle
+
+
+@runtime_checkable
+class QNodeProtocol(Protocol):
+    """Protocol for PennyLane QNode objects."""
+
+    tape: Any
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Execute the QNode."""
+        ...
+
 
 # Gate name mapping from PennyLane to manim-quantum
 PENNYLANE_GATE_MAP = {
@@ -29,7 +41,7 @@ PENNYLANE_GATE_MAP = {
 
 
 def circuit_from_qnode(
-        qnode: Callable,
+        qnode: QNodeProtocol,
         *args: Any,
         style: "QuantumStyle | None" = None,
         **kwargs: Any,
@@ -57,7 +69,7 @@ def circuit_from_qnode(
         ...     qml.RY(theta, wires=0)
         ...     qml.CNOT(wires=[0, 1])
         ...     return qml.expval(qml.PauliZ(0))
-        >>> circuit = circuit_from_qnode(my_circuit, 0.5)
+        >>> circuit = circuit_from_qnode(my_circuit, 0.5)  # type: ignore[arg-type]
     """
     try:
         import pennylane as qml
@@ -103,7 +115,7 @@ def circuit_from_qnode(
 
 
 def operations_from_qnode(
-        qnode: Callable,
+        qnode: QNodeProtocol,
         *args: Any,
         **kwargs: Any,
 ) -> list[tuple[str, list[int], list[float] | None]]:
