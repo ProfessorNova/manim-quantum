@@ -282,9 +282,9 @@ class BlochSphere(VGroup):
         else:
             # Extract relative phase
             if abs(alpha) < 1e-10:
-                phi = np.angle(beta)
+                phi = float(np.angle(beta))
             else:
-                phi = np.angle(beta) - np.angle(alpha)
+                phi = float(np.angle(beta) - np.angle(alpha))
 
         self.set_state(theta, phi)
 
