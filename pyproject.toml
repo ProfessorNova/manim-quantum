@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A Manim plugin for visualizing quantum computing concepts"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "manim-quantum contributors" }
 ]
