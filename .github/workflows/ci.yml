@@ -28,7 +28,15 @@ jobs:
             libcairo2-dev \
             libpango1.0-dev \
             pkg-config \
-            python3-dev
+            python3-dev \
+            texlive \
+            texlive-latex-extra \
+            texlive-fonts-extra \
+            texlive-latex-recommended \
+            texlive-science \
+            texlive-fonts-recommended \
+            tipa \
+            ffmpeg
 
       - name: Install dependencies
         run: |
