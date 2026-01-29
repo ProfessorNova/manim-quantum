@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/manim-quantum.svg)](https://badge.fury.io/py/manim-quantum)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://github.com/professornova/manim-quantum/actions/workflows/tests.yml/badge.svg)](https://github.com/professornova/manim-quantum/actions)
+[![Tests](https://github.com/professornova/manim-quantum/actions/workflows/ci.yml/badge.svg)](https://github.com/professornova/manim-quantum/actions)
 
 A [Manim](https://www.manim.community/) plugin for creating beautiful quantum computing visualizations and animations.
 
@@ -49,68 +49,25 @@ from manim_quantum import QuantumCircuit
 
 class BellCircuit(Scene):
     def construct(self):
-        # Create a 2-qubit circuit
         circuit = QuantumCircuit(num_qubits=2)
-
-        # Add gates
-        circuit.add_gate("H", [0])  # Hadamard on qubit 0
-        circuit.add_gate("CNOT", [0, 1])  # CNOT with control=0, target=1
-        circuit.add_gate("Measure", [0, 1])  # Measure both qubits
-
-        # Build and display
+        circuit.add_gate("H", [0])
+        circuit.add_gate("CNOT", [0, 1])
+        circuit.add_gate("Measure", [0])
+        circuit.add_gate("Measure", [1])
         circuit.build()
-        self.play(Create(circuit))
 
-        # Animate circuit evaluation
-        self.play(circuit.create_glow_animation())
+        self.play(Create(circuit), run_time=2)
+        self.wait(0.5)
+
+        anim = CircuitEvaluationAnimation(circuit)
+        self.play(anim.create_glow_animation(run_time=1.5))
+        self.wait()
 ```
 
 Render with:
 
 ```bash
 manim -pql your_file.py BellCircuit
-```
-
-### Visualizing State Vectors
-
-```python
-from manim import *
-from manim_quantum import StateVector
-
-
-class StateDemo(Scene):
-    def construct(self):
-        # Create a Bell state
-        bell = StateVector.bell_state("phi+")
-
-        # Or from explicit amplitudes
-        import numpy as np
-        custom = StateVector([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
-
-        # Show probability bars instead of amplitudes
-        with_bars = StateVector.bell_state("phi+", show_probabilities=True)
-
-        self.play(FadeIn(bell))
-```
-
-### Bloch Sphere Visualization
-
-```python
-from manim import *
-from manim_quantum import BlochSphere
-
-
-class BlochDemo(ThreeDScene):
-    def construct(self):
-        self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
-
-        # Create Bloch sphere at |0⟩ state
-        bloch = BlochSphere.basis_state("0")
-        self.play(Create(bloch))
-
-        # Animate to |+⟩ state (after Hadamard)
-        import numpy as np
-        self.play(bloch.animate.set_state(np.pi / 2, 0))
 ```
 
 ### PennyLane Integration
@@ -185,14 +142,6 @@ See the [examples/](examples/) directory for more complete examples:
 - `basic_examples.py` - Circuit, state vector, and Bloch sphere demos
 - More examples coming soon!
 
-## Documentation
-
-Full documentation is available at [manim-quantum.readthedocs.io](https://manim-quantum.readthedocs.io).
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
 ### Development Setup
 
 ```bash
@@ -203,44 +152,18 @@ cd manim-quantum
 # Install in development mode
 pip install -e ".[dev]"
 
-# Install pre-commit hooks
-pre-commit install
-
 # Run tests
 pytest
 ```
-
-## Roadmap
-
-- [ ] More gate types (Toffoli, custom unitaries)
-- [ ] Quantum error visualization
-- [ ] Circuit optimization animations
-- [ ] Density matrix visualization
-- [ ] Multi-qubit Bloch sphere alternatives
-- [ ] Interactive components
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Citation
-
-If you use manim-quantum in academic work, please cite:
-
-```bibtex
-@software{manim_quantum,
-  title = {manim-quantum: Quantum Computing Visualizations for Manim},
-  author = {manim-quantum contributors},
-  year = {2025},
-  url = {https://github.com/professornova/manim-quantum}
-}
-```
-
 ## Acknowledgments
 
-- [Manim Community](https://www.manim.community/) for the amazing animation library
-- [PennyLane](https://pennylane.ai/) for quantum computing framework integration
-- The quantum computing education community
+- [Manim Community](https://www.manim.community/)
+- [PennyLane](https://pennylane.ai/)
 
 ---
 
