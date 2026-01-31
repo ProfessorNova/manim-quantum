@@ -7,7 +7,12 @@ circuits, state vectors, Bloch spheres, and other quantum computing concepts.
 from __future__ import annotations
 
 # Animations
-from manim_quantum.animations import GateAnimation, CircuitEvaluationAnimation
+from manim_quantum.animations import (
+    GateAnimation,
+    CircuitEvaluationAnimation,
+    BlochSphereStateTransition,
+    BlochSphereRotation,
+)
 # Bloch sphere
 from manim_quantum.bloch import BlochSphere
 # Circuit components
@@ -34,6 +39,8 @@ __all__ = [
     # Animations
     "GateAnimation",
     "CircuitEvaluationAnimation",
+    "BlochSphereStateTransition",
+    "BlochSphereRotation",
     # Styles
     "QuantumStyle",
     "StylePresets",
