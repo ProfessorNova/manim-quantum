@@ -223,34 +223,34 @@ class TestBlochSphere:
 
         sphere = BlochSphere()
         assert sphere.radius == 2.0
-        assert sphere._theta == 0.0
-        assert sphere._phi == 0.0
+        assert sphere.get_theta() == 0.0
+        assert sphere.get_phi() == 0.0
 
     def test_bloch_sphere_with_initial_state(self):
         """Test Bloch sphere with initial state."""
         from manim_quantum import BlochSphere
 
         sphere = BlochSphere(initial_state=(np.pi / 2, 0))
-        assert np.isclose(sphere._theta, np.pi / 2)
-        assert np.isclose(sphere._phi, 0)
+        assert np.isclose(sphere.get_theta(), np.pi / 2)
+        assert np.isclose(sphere.get_phi(), 0)
 
     def test_basis_state_creation(self):
         """Test basis state Bloch sphere."""
         from manim_quantum import BlochSphere
 
         sphere = BlochSphere.basis_state("0")
-        assert sphere._theta == 0
+        assert sphere.get_theta() == 0
 
         sphere = BlochSphere.basis_state("1")
-        assert np.isclose(sphere._theta, np.pi)
+        assert np.isclose(sphere.get_theta(), np.pi)
 
     def test_plus_state(self):
         """Test |+⟩ state Bloch sphere."""
         from manim_quantum import BlochSphere
 
         sphere = BlochSphere.plus_state()
-        assert np.isclose(sphere._theta, np.pi / 2)
-        assert np.isclose(sphere._phi, 0)
+        assert np.isclose(sphere.get_theta(), np.pi / 2)
+        assert np.isclose(sphere.get_phi(), 0)
 
     def test_set_state(self):
         """Test setting Bloch sphere state."""
@@ -259,8 +259,8 @@ class TestBlochSphere:
         sphere = BlochSphere()
         sphere.set_state(np.pi / 4, np.pi / 3)
 
-        assert np.isclose(sphere._theta, np.pi / 4)
-        assert np.isclose(sphere._phi, np.pi / 3)
+        assert np.isclose(sphere.get_theta(), np.pi / 4)
+        assert np.isclose(sphere.get_phi(), np.pi / 3)
 
     def test_get_state_amplitudes(self):
         """Test getting state amplitudes."""
@@ -271,6 +271,35 @@ class TestBlochSphere:
         alpha, beta = sphere.get_state_amplitudes()
         assert np.isclose(abs(alpha), 1.0)
         assert np.isclose(abs(beta), 0.0)
+
+    def test_set_state_updates_arrow_in_place(self):
+        """Test that set_state updates arrow without recreating it."""
+        from manim_quantum import BlochSphere
+
+        sphere = BlochSphere()
+        original_arrow = sphere.state_arrow
+
+        # Update state
+        sphere.set_state(np.pi / 2, np.pi / 4)
+
+        # Arrow should be the same object, just updated
+        assert sphere.state_arrow is original_arrow
+        assert np.isclose(sphere.get_theta(), np.pi / 2)
+        assert np.isclose(sphere.get_phi(), np.pi / 4)
+
+    def test_get_theta(self):
+        """Test get_theta method."""
+        from manim_quantum import BlochSphere
+
+        sphere = BlochSphere(initial_state=(np.pi / 3, np.pi / 4))
+        assert np.isclose(sphere.get_theta(), np.pi / 3)
+
+    def test_get_phi(self):
+        """Test get_phi method."""
+        from manim_quantum import BlochSphere
+
+        sphere = BlochSphere(initial_state=(np.pi / 3, np.pi / 4))
+        assert np.isclose(sphere.get_phi(), np.pi / 4)
 
 
 class TestQuantumStyle:
@@ -380,3 +409,98 @@ class TestCircuitEvaluationAnimation:
 
         anim = anim_factory.create_shot_animation(wires=[0])
         assert anim is not None
+
+
+class TestBlochSphereAnimations:
+    """Tests for Bloch sphere animation classes."""
+
+    def test_state_transition_creation(self):
+        """Test BlochSphereStateTransition creation."""
+        from manim_quantum import BlochSphere, BlochSphereStateTransition
+
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereStateTransition(sphere, np.pi / 2, 0)
+
+        assert anim.bloch_sphere is sphere
+        assert np.isclose(anim.initial_theta, 0)
+        assert np.isclose(anim.initial_phi, 0)
+        assert np.isclose(anim.target_theta, np.pi / 2)
+        assert np.isclose(anim.target_phi, 0)
+
+    def test_state_transition_interpolation(self):
+        """Test BlochSphereStateTransition interpolation."""
+        from manim_quantum import BlochSphere, BlochSphereStateTransition
+
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereStateTransition(sphere, np.pi, 0)
+
+        # Test interpolation at alpha=0.5 (halfway)
+        anim.interpolate_mobject(0.5)
+        assert np.isclose(sphere.get_theta(), np.pi / 2)
+        assert np.isclose(sphere.get_phi(), 0)
+
+        # Test interpolation at alpha=1.0 (end)
+        anim.interpolate_mobject(1.0)
+        assert np.isclose(sphere.get_theta(), np.pi)
+        assert np.isclose(sphere.get_phi(), 0)
+
+    def test_rotation_animation_creation(self):
+        """Test BlochSphereRotation creation."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereRotation(sphere, "y", np.pi / 2)
+
+        assert anim.bloch_sphere is sphere
+        assert anim.axis == "y"
+        assert np.isclose(anim.angle, np.pi / 2)
+
+    def test_rotation_around_y_axis(self):
+        """Test rotation around Y axis."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+
+        # Start at |0⟩ (north pole)
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereRotation(sphere, "y", np.pi / 2)
+
+        # After π/2 rotation around Y, should be at equator
+        anim.interpolate_mobject(1.0)
+        assert np.isclose(sphere.get_theta(), np.pi / 2, atol=1e-6)
+
+    def test_rotation_around_x_axis(self):
+        """Test rotation around X axis."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereRotation(sphere, "x", np.pi / 2)
+
+        # Rotation should update the state
+        anim.interpolate_mobject(1.0)
+        # State should have changed from initial
+        assert not (np.isclose(sphere.get_theta(), 0) and np.isclose(sphere.get_phi(), 0))
+
+    def test_rotation_around_z_axis(self):
+        """Test rotation around Z axis."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+
+        # Start at |+⟩ (on equator at phi=0)
+        sphere = BlochSphere.plus_state()
+        anim = BlochSphereRotation(sphere, "z", np.pi / 2)
+
+        # After π/2 rotation around Z, phi should change by π/2
+        initial_phi = sphere.get_phi()
+        anim.interpolate_mobject(1.0)
+        # Theta should stay the same (still on equator)
+        assert np.isclose(sphere.get_theta(), np.pi / 2, atol=1e-6)
+        # Phi should have rotated
+        assert np.isclose(sphere.get_phi(), initial_phi + np.pi / 2, atol=1e-6)
+
+    def test_rotation_invalid_axis(self):
+        """Test that invalid axis raises error."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+        import pytest
+
+        sphere = BlochSphere.basis_state("0")
+
+        with pytest.raises(ValueError, match="Invalid axis"):
+            BlochSphereRotation(sphere, "w", np.pi / 2)

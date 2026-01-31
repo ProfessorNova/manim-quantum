@@ -7,7 +7,7 @@ Run these examples with:
     manim -pql examples/basic_examples.py BlochSphereDemo
     ... and so on for other scenes.
 """
-
+import numpy as np
 from manim import (
     DEGREES,
     DOWN,
@@ -24,7 +24,13 @@ from manim import (
     Write,
 )
 
-from manim_quantum import BlochSphere, CircuitEvaluationAnimation, QuantumCircuit, StateVector
+from manim_quantum import (
+    BlochSphere,
+    BlochSphereStateTransition,
+    CircuitEvaluationAnimation,
+    QuantumCircuit,
+    StateVector,
+)
 from manim_quantum.styles import StylePresets
 
 
@@ -132,7 +138,7 @@ class BlochSphereDemo(ThreeDScene):
     Shows:
     - Basic Bloch sphere creation
     - Different quantum states
-    - State transitions
+    - State transitions along the surface
     - Labels that always face the camera
 
     Note: Requires ThreeDScene for proper 3D rendering.
@@ -142,37 +148,29 @@ class BlochSphereDemo(ThreeDScene):
         # Set up camera
         self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
 
-        # Create Bloch sphere at |0⟩
-        bloch = BlochSphere.basis_state("0", radius=2)
+        # Create Bloch sphere at |0⟩ with thicker arrow
+        bloch = BlochSphere.basis_state("0", radius=2, arrow_thickness=0.04)
 
         # Make labels always face the camera
         bloch.add_labels_to_scene(self)
 
-        self.play(Create(bloch), run_time=2)
+        self.play(FadeIn(bloch), run_time=2)
         self.wait()
 
-        # Rotate camera for better view
-        self.begin_ambient_camera_rotation(rate=0.2)
-        self.wait(2)
-
         # Transition to |+⟩ state (after H gate)
-        import numpy as np
-
+        # Arrow smoothly moves along the surface
         self.play(
-            bloch.animate.set_state(np.pi / 2, 0),
+            BlochSphereStateTransition(bloch, np.pi / 2, 0),
             run_time=1.5,
         )
         self.wait(2)
 
         # Transition to |1⟩ state
         self.play(
-            bloch.animate.set_state(np.pi, 0),
+            BlochSphereStateTransition(bloch, np.pi, 0),
             run_time=1.5,
         )
         self.wait(2)
-
-        self.stop_ambient_camera_rotation()
-        self.wait()
 
 
 class QuantumTeleportation(Scene):
