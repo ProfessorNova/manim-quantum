@@ -31,6 +31,8 @@ class QuantumCircuit(VGroup):
         x_end: Right boundary of the circuit.
         wire_spacing: Vertical spacing between wires.
         style: Visual style configuration.
+        compress: If True, gates are automatically arranged in the most compact
+            form by parallelizing gates on non-overlapping wires (minimizes depth).
 
     Example:
         >>> circuit = QuantumCircuit(num_qubits=2)
@@ -47,6 +49,7 @@ class QuantumCircuit(VGroup):
             x_end: float = 5.5,
             wire_spacing: float = 1.0,
             style: QuantumStyle | None = None,
+            compress: bool = True,
     ) -> None:
         super().__init__()
 
@@ -55,11 +58,13 @@ class QuantumCircuit(VGroup):
         self.x_end = x_end
         self.wire_spacing = wire_spacing
         self.style = style or QuantumStyle()
+        self.compress = compress
 
         self._gates: list[QuantumGate] = []
         self._wires: dict[int, QuantumWire] = {}
         self._gate_x_positions: list[float] = []
         self._next_gate_x = x_start + 1.5
+        self._wire_next_free_layer: dict[int, int] = {i: 0 for i in range(num_qubits)}
 
         self._build_wires(wire_labels)
 
@@ -106,8 +111,17 @@ class QuantumCircuit(VGroup):
         )
 
         if x is None:
-            x = self._next_gate_x
-            self._next_gate_x += self.style.gate_spacing
+            if self.compress:
+                # Compression: find the minimum layer where all target wires are free
+                min_layer = max(self._wire_next_free_layer.get(w, 0) for w in target_wires)
+                x = self.x_start + 1.5 + min_layer * self.style.gate_spacing
+
+                # Update wire availability - all target wires are now occupied up to next layer
+                for wire_idx in target_wires:
+                    self._wire_next_free_layer[wire_idx] = min_layer + 1
+            else:
+                x = self._next_gate_x
+                self._next_gate_x += self.style.gate_spacing
 
         self._gate_x_positions.append(x)
         self._gates.append(gate)
