@@ -100,6 +100,159 @@ class TestQuantumCircuit:
         assert circuit.num_qubits == 2
         assert len(circuit._gates) == 3
 
+    def test_circuit_compression_disabled(self):
+        """Test circuit without compression (default behavior)."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=3, compress=False)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("H", [1])
+        circuit.add_gate("H", [2])
+
+        # Without compression, gates should be placed sequentially
+        positions = circuit._gate_x_positions
+        assert len(positions) == 3
+        # Each gate should be at a different x position
+        assert positions[0] != positions[1]
+        assert positions[1] != positions[2]
+
+    def test_circuit_compression_enabled(self):
+        """Test circuit with compression enabled."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=3, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("H", [1])
+        circuit.add_gate("H", [2])
+
+        # With compression, all three H gates on different wires should be at same x position
+        positions = circuit._gate_x_positions
+        assert len(positions) == 3
+        assert positions[0] == positions[1] == positions[2]
+
+    def test_circuit_compression_parallel_gates(self):
+        """Test that non-overlapping gates are parallelized."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=4, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("X", [1])
+        circuit.add_gate("Y", [2])
+        circuit.add_gate("Z", [3])
+
+        # All gates operate on different wires, so should be at same x position
+        positions = circuit._gate_x_positions
+        assert all(p == positions[0] for p in positions)
+
+    def test_circuit_compression_sequential_on_same_wire(self):
+        """Test that gates on the same wire remain sequential."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("X", [0])
+        circuit.add_gate("Y", [0])
+
+        # Gates on same wire must be sequential
+        positions = circuit._gate_x_positions
+        assert positions[0] < positions[1] < positions[2]
+
+    def test_circuit_compression_cnot_blocks_wires(self):
+        """Test that multi-qubit gates properly block all involved wires."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=3, compress=True)
+        circuit.add_gate("CNOT", [0, 1])  # Blocks wires 0 and 1
+        circuit.add_gate("H", [0])  # Must wait for CNOT
+        circuit.add_gate("H", [1])  # Must wait for CNOT
+        circuit.add_gate("H", [2])  # Can be parallel with CNOT
+
+        positions = circuit._gate_x_positions
+        # CNOT and H on wire 2 should be at same position (layer 0)
+        assert positions[0] == positions[3]
+        # H gates on wires 0 and 1 should be in next layer
+        assert positions[1] == positions[2]
+        assert positions[1] > positions[0]
+
+    def test_circuit_compression_mixed_scenario(self):
+        """Test complex scenario with mixed gate dependencies."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=4, compress=True)
+        # Layer 0: All parallel
+        circuit.add_gate("H", [0])
+        circuit.add_gate("H", [1])
+        circuit.add_gate("H", [2])
+        circuit.add_gate("H", [3])
+
+        # Layer 1: CNOT blocks 0,1; X blocks 2
+        circuit.add_gate("CNOT", [0, 1])
+        circuit.add_gate("X", [2])
+
+        # Layer 2: Y on wire 3 (can be in layer 1); Z on wire 0 (must be layer 2)
+        circuit.add_gate("Y", [3])
+        circuit.add_gate("Z", [0])
+
+        positions = circuit._gate_x_positions
+
+        # First 4 H gates should all be in layer 0
+        assert positions[0] == positions[1] == positions[2] == positions[3]
+
+        # CNOT and X should be in layer 1
+        assert positions[4] == positions[5]
+        assert positions[4] > positions[0]
+
+        # Y on wire 3 should be in layer 1 (parallel with CNOT and X)
+        assert positions[6] == positions[4]
+
+        # Z on wire 0 must wait for CNOT, so layer 2
+        assert positions[7] > positions[4]
+
+    def test_circuit_compression_depth_reduction(self):
+        """Test that compression actually reduces circuit depth."""
+        from manim_quantum import QuantumCircuit
+
+        # Without compression
+        circuit_uncompressed = QuantumCircuit(num_qubits=3, compress=False)
+        for i in range(3):
+            circuit_uncompressed.add_gate("H", [i])
+
+        # With compression
+        circuit_compressed = QuantumCircuit(num_qubits=3, compress=True)
+        for i in range(3):
+            circuit_compressed.add_gate("H", [i])
+
+        # Count unique x positions (layers)
+        uncompressed_depth = len(set(circuit_uncompressed._gate_x_positions))
+        compressed_depth = len(set(circuit_compressed._gate_x_positions))
+
+        # Compressed should have fewer layers
+        assert compressed_depth < uncompressed_depth
+        assert compressed_depth == 1  # All gates can be parallel
+        assert uncompressed_depth == 3  # All gates are sequential
+
+    def test_circuit_compression_preserves_functionality(self):
+        """Test that compression doesn't change gate order on same wire."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("X", [1])
+        circuit.add_gate("Y", [0])
+        circuit.add_gate("Z", [1])
+
+        # Check gates on wire 0: H then Y
+        wire_0_gates = [g for g in circuit._gates if 0 in g.target_wires]
+        assert len(wire_0_gates) == 2
+        assert wire_0_gates[0].name == "H"
+        assert wire_0_gates[1].name == "Y"
+
+        # Check gates on wire 1: X then Z
+        wire_1_gates = [g for g in circuit._gates if 1 in g.target_wires]
+        assert len(wire_1_gates) == 2
+        assert wire_1_gates[0].name == "X"
+        assert wire_1_gates[1].name == "Z"
+
 
 class TestQuantumGate:
     """Tests for QuantumGate class."""
