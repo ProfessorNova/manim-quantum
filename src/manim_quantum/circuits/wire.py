@@ -102,6 +102,18 @@ class QuantumWire(VGroup):
         """
         self._masked_regions.append((center_x, half_width))
 
+    def shift_masks(self, offset: float) -> None:
+        """
+        Shift all masked regions by a given offset.
+
+        Args:
+            offset: The x-offset to apply to all masked regions.
+        """
+        self._masked_regions = [
+            (center_x + offset, half_width)
+            for center_x, half_width in self._masked_regions
+        ]
+
     def rebuild_segments(self) -> None:
         """
         Rebuild wire segments based on masked regions.
