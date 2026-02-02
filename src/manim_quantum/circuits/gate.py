@@ -386,7 +386,8 @@ class QuantumGate(VGroup):
             elif abs(angle - np.pi / 4) < 0.01:
                 angle_str = r"\frac{\pi}{4}"
             else:
-                return gate_name
+                angle_str = f"{angle:.2f}"
+            return f"{self.name}({angle_str})"
 
         return self.name
 
