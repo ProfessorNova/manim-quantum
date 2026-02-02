@@ -253,6 +253,67 @@ class TestQuantumCircuit:
         assert wire_1_gates[0].name == "X"
         assert wire_1_gates[1].name == "Z"
 
+    def test_circuit_center_disabled(self):
+        """Test circuit with centering disabled (default)."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, x_start=-5, x_end=5, center=False)
+        circuit.add_gate("H", [0])
+        circuit.build()
+
+        # Without centering, gates start from x_start + 1.5
+        positions = circuit._gate_x_positions
+        expected_start = -5 + 1.5  # x_start + 1.5
+        assert abs(positions[0] - expected_start) < 0.001
+
+    def test_circuit_center_enabled(self):
+        """Test circuit with centering enabled."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, x_start=-5, x_end=5, center=True)
+        circuit.add_gate("H", [0])
+        circuit.build()
+
+        # With centering and single gate, gate should be at circuit center
+        positions = circuit._gate_x_positions
+        circuit_center = (-5 + 5) / 2  # 0
+        assert abs(positions[0] - circuit_center) < 0.001
+
+    def test_circuit_center_multiple_gates(self):
+        """Test centering with multiple gates."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, x_start=-5, x_end=5, center=True, compress=False)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("X", [0])
+        circuit.add_gate("Y", [0])
+        circuit.build()
+
+        # Gates center should be at circuit center
+        positions = circuit._gate_x_positions
+        gates_center = (min(positions) + max(positions)) / 2
+        circuit_center = (-5 + 5) / 2  # 0
+        assert abs(gates_center - circuit_center) < 0.001
+
+    def test_circuit_center_with_compression(self):
+        """Test centering works with compression."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=3, x_start=-6, x_end=6, center=True, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("H", [1])
+        circuit.add_gate("H", [2])
+        circuit.add_gate("X", [0])
+        circuit.build()
+
+        # All H gates should be at same position, X at another
+        positions = circuit._gate_x_positions
+        # With compression: H gates at layer 0, X at layer 1
+        # After centering, their average should be near circuit center
+        gates_center = (min(positions) + max(positions)) / 2
+        circuit_center = (-6 + 6) / 2  # 0
+        assert abs(gates_center - circuit_center) < 0.001
+
 
 class TestQuantumGate:
     """Tests for QuantumGate class."""

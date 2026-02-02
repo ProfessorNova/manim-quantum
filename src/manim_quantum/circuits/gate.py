@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from manim_quantum.styles import QuantumStyle
 
 # Gate type categories
-SINGLE_QUBIT_GATES = {"H", "X", "Y", "Z", "S", "T", "RX", "RY", "RZ", "U", "I"}
+SINGLE_QUBIT_GATES = {"H", "X", "Y", "Z", "S", "Sdg", "T", "Tdg", "RX", "RY", "RZ", "U", "I"}
 TWO_QUBIT_GATES = {"CNOT", "CX", "CZ", "CY", "SWAP", "ISWAP", "CRX", "CRY", "CRZ"}
 MEASUREMENT_GATES = {"Measure", "M"}
 
@@ -50,7 +50,11 @@ class QuantumGate(VGroup):
     ) -> None:
         super().__init__()
 
-        self.name = name.upper() if name not in {"Measure"} else name
+        # Preserve case for special gates like Measure and dagger gates
+        if name not in {"Measure", "Sdg", "Tdg"}:
+            self.name = name.upper()
+        else:
+            self.name = name
         self.target_wires = target_wires
         self.params = params or []
 
@@ -98,10 +102,23 @@ class QuantumGate(VGroup):
 
         group = VGroup()
 
+        # Gate label (create first to measure size)
+        label_text = self._get_gate_label()
+        label = MathTex(label_text, color=self.style.gate_text_color)
+        label.scale(self.style.gate_font_scale)
+        label.move_to([x, y, 0])
+
+        # Calculate box width based on label width with padding
+        label_width = label.width
+        label_height = label.height
+        padding = 0.2  # Padding on each side
+        box_width = max(self.style.gate_width, label_width + 2 * padding)
+        box_height = max(self.style.gate_height, label_height + 2 * padding)
+
         # Gate box
         box = Rectangle(
-            width=self.style.gate_width,
-            height=self.style.gate_height,
+            width=box_width,
+            height=box_height,
             fill_color=self.style.gate_fill_color,
             fill_opacity=self.style.gate_fill_opacity,
             stroke_color=self.style.gate_stroke_color,
@@ -109,15 +126,9 @@ class QuantumGate(VGroup):
         )
         box.move_to([x, y, 0])
         group.add(box)
-
-        # Gate label
-        label_text = self._get_gate_label()
-        label = MathTex(label_text, color=self.style.gate_text_color)
-        label.scale(self.style.gate_font_scale)
-        label.move_to([x, y, 0])
         group.add(label)
 
-        self._mask_width = self.style.gate_width
+        self._mask_width = box_width
 
         return group
 
@@ -355,6 +366,12 @@ class QuantumGate(VGroup):
 
     def _get_gate_label(self) -> str:
         """Get the display label for the gate."""
+        # Handle dagger gates with proper LaTeX symbol
+        if self.name == "Sdg":
+            return r"S^{\dagger}"
+        elif self.name == "Tdg":
+            return r"T^{\dagger}"
+
         # Handle rotation gates with parameters
         if self.name in {"RX", "RY", "RZ"} and self.params:
             angle = self.params[0]
@@ -369,8 +386,7 @@ class QuantumGate(VGroup):
             elif abs(angle - np.pi / 4) < 0.01:
                 angle_str = r"\frac{\pi}{4}"
             else:
-                angle_str = f"{angle:.2f}"
-            return f"{self.name}({angle_str})"
+                return gate_name
 
         return self.name
 

@@ -33,6 +33,8 @@ class QuantumCircuit(VGroup):
         style: Visual style configuration.
         compress: If True, gates are automatically arranged in the most compact
             form by parallelizing gates on non-overlapping wires (minimizes depth).
+        center: If True, gates are centered horizontally within the circuit bounds
+            after all gates are added (during build()).
 
     Example:
         >>> circuit = QuantumCircuit(num_qubits=2)
@@ -50,6 +52,7 @@ class QuantumCircuit(VGroup):
             wire_spacing: float = 1.0,
             style: QuantumStyle | None = None,
             compress: bool = True,
+            center: bool = False,
     ) -> None:
         super().__init__()
 
@@ -59,12 +62,15 @@ class QuantumCircuit(VGroup):
         self.wire_spacing = wire_spacing
         self.style = style or QuantumStyle()
         self.compress = compress
+        self.center = center
 
         self._gates: list[QuantumGate] = []
         self._wires: dict[int, QuantumWire] = {}
         self._gate_x_positions: list[float] = []
+        self._gate_visuals: list[VGroup] = []
         self._next_gate_x = x_start + 1.5
         self._wire_next_free_layer: dict[int, int] = {i: 0 for i in range(num_qubits)}
+        self._needs_rebuild = False
 
         self._build_wires(wire_labels)
 
@@ -79,6 +85,12 @@ class QuantumCircuit(VGroup):
             )
             self._wires[i] = wire
             self.add(wire)
+
+    def _ensure_built(self) -> None:
+        """Ensure the circuit is built before it's used."""
+        if self._needs_rebuild:
+            self.build()
+            self._needs_rebuild = False
 
     def _get_wire_positions(self) -> dict[int, float]:
         """Get mapping from wire index to y-coordinate."""
@@ -128,6 +140,7 @@ class QuantumCircuit(VGroup):
 
         wire_positions = self._get_wire_positions()
         gate_visual = gate.render(wire_positions, x)
+        self._gate_visuals.append(gate_visual)
         self.add(gate_visual)
 
         half_width = gate.get_mask_width() / 2
@@ -135,6 +148,7 @@ class QuantumCircuit(VGroup):
             if wire_idx in self._wires:
                 self._wires[wire_idx].mask_region(x, half_width)
 
+        self._needs_rebuild = True
         return gate
 
     def add_gates(
@@ -164,13 +178,50 @@ class QuantumCircuit(VGroup):
         Finalize the circuit after all gates are added.
 
         This rebuilds wire segments to properly show breaks at gate positions.
+        If center=True, gates will be centered horizontally within the circuit bounds.
+
+        Note: This is called automatically when the circuit is rendered, so manual
+        calls are optional but can be used for explicit control.
 
         Returns:
             Self for method chaining.
         """
+        if self.center and self._gate_x_positions:
+            self._center_gates()
+
         for wire in self._wires.values():
             wire.rebuild_segments()
+
+        self._needs_rebuild = False
         return self
+
+    def _center_gates(self) -> None:
+        """Center all gates horizontally within the circuit bounds."""
+        if not self._gate_x_positions:
+            return
+
+        # Calculate the bounding box of all gates
+        min_gate_x = min(self._gate_x_positions)
+        max_gate_x = max(self._gate_x_positions)
+
+        # Calculate current gates center and target center
+        gates_center = (min_gate_x + max_gate_x) / 2
+        circuit_center = (self.x_start + self.x_end) / 2
+
+        # Calculate offset to center gates
+        offset = circuit_center - gates_center
+
+        if abs(offset) < 0.001:  # Already centered
+            return
+
+        # Shift all gate positions and visuals
+        for i, gate_visual in enumerate(self._gate_visuals):
+            self._gate_x_positions[i] += offset
+            gate_visual.shift(np.array([offset, 0, 0]))
+
+        # Update wire mask regions
+        for wire in self._wires.values():
+            wire.shift_masks(offset)
 
     def get_wire(self, index: int) -> QuantumWire | None:
         """Get a wire by index."""
@@ -208,6 +259,57 @@ class QuantumCircuit(VGroup):
             if wire:
                 wire.reset_highlight()
 
+    # Override methods to ensure circuit is built before use
+    def get_center(self):
+        """Get the center of the circuit, ensuring it's built first."""
+        self._ensure_built()
+        return super().get_center()
+
+    def get_top(self):
+        """Get the top of the circuit, ensuring it's built first."""
+        self._ensure_built()
+        return super().get_top()
+
+    def get_bottom(self):
+        """Get the bottom of the circuit, ensuring it's built first."""
+        self._ensure_built()
+        return super().get_bottom()
+
+    def get_left(self):
+        """Get the left of the circuit, ensuring it's built first."""
+        self._ensure_built()
+        return super().get_left()
+
+    def get_right(self):
+        """Get the right of the circuit, ensuring it's built first."""
+        self._ensure_built()
+        return super().get_right()
+
+    def get_family(self, *args, **kwargs):
+        """Get the mobject family, ensuring the circuit is built first."""
+        self._ensure_built()
+        return super().get_family(*args, **kwargs)
+
+    def family_members_with_points(self):
+        """Get family members with points, ensuring the circuit is built first."""
+        self._ensure_built()
+        return super().family_members_with_points()
+
+    def get_all_points(self) -> np.ndarray:
+        """Get all points, ensuring the circuit is built first."""
+        self._ensure_built()
+        return super().get_all_points()
+
+    def get_critical_point(self, direction):
+        """Get a critical point, ensuring the circuit is built first."""
+        self._ensure_built()
+        return super().get_critical_point(direction)
+
+    def generate_target(self, use_deepcopy: bool = True):
+        """Generate a target for animations, ensuring the circuit is built first."""
+        self._ensure_built()
+        return super().generate_target(use_deepcopy=use_deepcopy)
+
     @classmethod
     def from_operations(
             cls,
@@ -234,4 +336,4 @@ class QuantumCircuit(VGroup):
         for name, wires, params in operations:
             circuit.add_gate(name, wires, params if params else None)
 
-        return circuit.build()
+        return circuit
