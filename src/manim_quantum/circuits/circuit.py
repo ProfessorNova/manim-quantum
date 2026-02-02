@@ -285,6 +285,21 @@ class QuantumCircuit(VGroup):
         self._ensure_built()
         return super().get_right()
 
+    def get_family(self, *args, **kwargs):
+        """Get the mobject family, ensuring the circuit is built first."""
+        self._ensure_built()
+        return super().get_family(*args, **kwargs)
+
+    def family_members_with_points(self):
+        """Get family members with points, ensuring the circuit is built first."""
+        self._ensure_built()
+        return super().family_members_with_points()
+
+    def get_all_points(self) -> np.ndarray:
+        """Get all points, ensuring the circuit is built first."""
+        self._ensure_built()
+        return super().get_all_points()
+
     def get_critical_point(self, direction):
         """Get a critical point, ensuring the circuit is built first."""
         self._ensure_built()
