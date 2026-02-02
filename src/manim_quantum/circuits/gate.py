@@ -373,41 +373,21 @@ class QuantumGate(VGroup):
             return r"T^{\dagger}"
 
         # Handle rotation gates with parameters
-        if self.name in {"RX", "RY", "RZ"}:
-            # Use subscript notation for rotation gates
-            axis = self.name[1]  # Get X, Y, or Z
-            gate_name = f"R_{{{axis}}}"
-
-            if self.params:
-                param = self.params[0]
-
-                # Handle string parameters (symbolic like "theta")
-                if isinstance(param, str):
-                    # Use Greek letter notation for common variables
-                    if param.lower() == "theta":
-                        angle_str = r"\theta"
-                    elif param.lower() == "phi":
-                        angle_str = r"\phi"
-                    elif param.lower() == "lambda":
-                        angle_str = r"\lambda"
-                    else:
-                        angle_str = param
-                else:
-                    # Handle numeric parameters
-                    angle = param
-                    # Format angle nicely
-                    if abs(angle - np.pi) < 0.01:
-                        angle_str = r"\pi"
-                    elif abs(angle - np.pi / 2) < 0.01:
-                        angle_str = r"\frac{\pi}{2}"
-                    elif abs(angle - np.pi / 4) < 0.01:
-                        angle_str = r"\frac{\pi}{4}"
-                    else:
-                        angle_str = f"{angle:.2f}"
-
-                return f"{gate_name}({angle_str})"
+        if self.name in {"RX", "RY", "RZ"} and self.params:
+            angle = self.params[0]
+            # If angle is a string, use it directly
+            if isinstance(angle, str):
+                return f"{self.name}({angle})"
+            # Format angle nicely for floats
+            if abs(angle - np.pi) < 0.01:
+                angle_str = r"\pi"
+            elif abs(angle - np.pi / 2) < 0.01:
+                angle_str = r"\frac{\pi}{2}"
+            elif abs(angle - np.pi / 4) < 0.01:
+                angle_str = r"\frac{\pi}{4}"
             else:
-                return gate_name
+                angle_str = f"{angle:.2f}"
+            return f"{self.name}({angle_str})"
 
         return self.name
 

@@ -298,7 +298,8 @@ class QuantumCircuit(VGroup):
     def get_all_points(self) -> np.ndarray:
         """Get all points, ensuring the circuit is built first."""
         self._ensure_built()
-        return super().get_all_points()
+        result = super().get_all_points()
+        return np.asarray(result)
 
     def get_critical_point(self, direction):
         """Get a critical point, ensuring the circuit is built first."""
@@ -313,7 +314,7 @@ class QuantumCircuit(VGroup):
     @classmethod
     def from_operations(
             cls,
-            operations: list[tuple[str, list[int], list[float] | None]],
+            operations: list[tuple[str, list[int], list[float | str] | None]],
             num_qubits: int | None = None,
             **kwargs,
     ) -> QuantumCircuit:
