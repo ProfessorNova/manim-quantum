@@ -88,7 +88,7 @@ class QuantumCircuit(VGroup):
             self,
             name: str,
             target_wires: list[int],
-            params: list[float] | None = None,
+            params: list[float | str] | None = None,
             x: float | None = None,
     ) -> QuantumGate:
         """
@@ -138,7 +138,7 @@ class QuantumCircuit(VGroup):
         return gate
 
     def add_gates(
-            self, gates: Sequence[tuple[str, list[int]] | tuple[str, list[int], list[float]]]
+            self, gates: Sequence[tuple[str, list[int]] | tuple[str, list[int], list[float | str]]]
     ) -> list[QuantumGate]:
         """
         Add multiple gates at once.
@@ -211,7 +211,7 @@ class QuantumCircuit(VGroup):
     @classmethod
     def from_operations(
             cls,
-            operations: list[tuple[str, list[int], list[float] | None]],
+            operations: list[tuple[str, list[int], list[float | str] | None]],
             num_qubits: int | None = None,
             **kwargs,
     ) -> QuantumCircuit:

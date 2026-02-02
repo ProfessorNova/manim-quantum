@@ -45,7 +45,7 @@ class QuantumGate(VGroup):
             self,
             name: str,
             target_wires: list[int],
-            params: list[float] | None = None,
+            params: list[float | str] | None = None,
             style: "QuantumStyle | None" = None,
     ) -> None:
         super().__init__()
@@ -358,7 +358,10 @@ class QuantumGate(VGroup):
         # Handle rotation gates with parameters
         if self.name in {"RX", "RY", "RZ"} and self.params:
             angle = self.params[0]
-            # Format angle nicely
+            # If angle is a string, use it directly
+            if isinstance(angle, str):
+                return f"{self.name}({angle})"
+            # Format angle nicely for floats
             if abs(angle - np.pi) < 0.01:
                 angle_str = r"\pi"
             elif abs(angle - np.pi / 2) < 0.01:
