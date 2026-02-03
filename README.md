@@ -44,7 +44,7 @@ pip install manim-quantum[dev]
 
 ```python
 from manim import *
-from manim_quantum import QuantumCircuit
+from manim_quantum import QuantumCircuit, CircuitEvaluationAnimation
 
 
 class BellCircuit(Scene):
@@ -54,7 +54,6 @@ class BellCircuit(Scene):
         circuit.add_gate("CNOT", [0, 1])
         circuit.add_gate("Measure", [0])
         circuit.add_gate("Measure", [1])
-        circuit.build()
 
         self.play(Create(circuit), run_time=2)
         self.wait(0.5)
@@ -93,17 +92,26 @@ circuit = circuit_from_qnode(my_circuit, 0.5)
 
 ## Supported Gates
 
-| Gate     | Syntax                     | Description           |
-|----------|----------------------------|-----------------------|
-| Hadamard | `add_gate("H", [0])`       | Single-qubit Hadamard |
-| Pauli-X  | `add_gate("X", [0])`       | Bit flip              |
-| Pauli-Y  | `add_gate("Y", [0])`       | Y rotation            |
-| Pauli-Z  | `add_gate("Z", [0])`       | Phase flip            |
-| CNOT     | `add_gate("CNOT", [0, 1])` | Controlled-NOT        |
-| CZ       | `add_gate("CZ", [0, 1])`   | Controlled-Z          |
-| SWAP     | `add_gate("SWAP", [0, 1])` | Swap qubits           |
-| RX/RY/RZ | `add_gate("RZ", [0], [θ])` | Rotation gates        |
-| Measure  | `add_gate("Measure", [0])` | Measurement           |
+| Gate        | Syntax                         | Description                   |
+|-------------|--------------------------------|-------------------------------|
+| Hadamard    | `add_gate("H", [0])`           | Single-qubit Hadamard         |
+| Identity    | `add_gate("I", [0])`           | Identity                      |
+| Pauli-X     | `add_gate("X", [0])`           | Bit flip                      |
+| Pauli-Y     | `add_gate("Y", [0])`           | Y rotation                    |
+| Pauli-Z     | `add_gate("Z", [0])`           | Phase flip                    |
+| Phase (S)   | `add_gate("S", [0])`           | Phase gate                    |
+| Phase (Sdg) | `add_gate("Sdg", [0])`         | Phase gate (dagger)           |
+| T           | `add_gate("T", [0])`           | T gate                        |
+| Tdg         | `add_gate("Tdg", [0])`         | T gate (dagger)               |
+| RX/RY/RZ    | `add_gate("RZ", [0], [theta])` | Rotation gates                |
+| U           | `add_gate("U", [0], [t,p,l])`  | Generic single-qubit rotation |
+| CNOT/CX     | `add_gate("CNOT", [0, 1])`     | Controlled-NOT                |
+| CY          | `add_gate("CY", [0, 1])`       | Controlled-Y                  |
+| CZ          | `add_gate("CZ", [0, 1])`       | Controlled-Z                  |
+| SWAP        | `add_gate("SWAP", [0, 1])`     | Swap qubits                   |
+| iSWAP       | `add_gate("ISWAP", [0, 1])`    | iSWAP gate                    |
+| CRX/CRY/CRZ | `add_gate("CRZ", [0, 1], [t])` | Controlled rotations          |
+| Measure/M   | `add_gate("Measure", [0])`     | Measurement                   |
 
 ## Styling
 
@@ -164,7 +172,3 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [Manim Community](https://www.manim.community/)
 - [PennyLane](https://pennylane.ai/)
-
----
-
-Made with ❤️ for quantum education

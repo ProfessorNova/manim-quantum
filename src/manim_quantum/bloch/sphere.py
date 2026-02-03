@@ -61,6 +61,7 @@ class BlochSphere(VGroup):
             show_state_vector: bool = True,
             initial_state: tuple[float, float] | None = None,
             style: QuantumStyle | None = None,
+            arrow_thickness: float = 0.02,
     ) -> None:
         super().__init__()
 
@@ -69,6 +70,7 @@ class BlochSphere(VGroup):
         self.show_labels = show_labels
         self.show_state_vector = show_state_vector
         self.style = style or QuantumStyle()
+        self.arrow_thickness = arrow_thickness
 
         # Current state in spherical coordinates (theta, phi)
         # theta: angle from +z axis (0 = |0⟩, pi = |1⟩)
@@ -103,8 +105,7 @@ class BlochSphere(VGroup):
         # State vector
         if self.show_state_vector:
             self.state_arrow = self._create_state_arrow()
-            self.state_dot = self._create_state_dot()
-            self.add(self.state_arrow, self.state_dot)
+            self.add(self.state_arrow)
 
     def _create_sphere(self) -> Surface:
         """Create the sphere surface."""
@@ -210,6 +211,7 @@ class BlochSphere(VGroup):
             start=ORIGIN,
             end=point,
             color=self.style.state_vector_color,
+            thickness=self.arrow_thickness,
         )
         return arrow
 
@@ -244,17 +246,26 @@ class BlochSphere(VGroup):
         if self.show_state_vector:
             point = self._get_cartesian()
 
-            # Update arrow
-            self.remove(self.state_arrow)
-            self.state_arrow = Arrow3D(
-                start=ORIGIN,
-                end=point,
-                color=self.style.state_vector_color,
-            )
-            self.add(self.state_arrow)
+            # Update arrow in place
+            self.state_arrow.put_start_and_end_on(ORIGIN, point)
 
-            # Update dot
-            self.state_dot.move_to(point)
+    def get_theta(self) -> float:
+        """
+        Get the current polar angle.
+
+        Returns:
+            Current theta value (0 to π).
+        """
+        return self._theta
+
+    def get_phi(self) -> float:
+        """
+        Get the current azimuthal angle.
+
+        Returns:
+            Current phi value (0 to 2π).
+        """
+        return self._phi
 
     def set_state_from_amplitudes(self, alpha: complex, beta: complex) -> None:
         """

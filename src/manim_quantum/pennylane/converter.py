@@ -99,7 +99,7 @@ def circuit_from_qnode(
         wires = list(op.wires)
 
         # Extract parameters if any
-        params = None
+        params: list[float | str] | None = None
         if op.parameters:
             params = [float(p) for p in op.parameters]
 
@@ -118,7 +118,7 @@ def operations_from_qnode(
         qnode: QNodeProtocol,
         *args: Any,
         **kwargs: Any,
-) -> list[tuple[str, list[int], list[float] | None]]:
+) -> list[tuple[str, list[int], list[float | str] | None]]:
     """
     Extract operations from a PennyLane QNode.
 
@@ -142,11 +142,11 @@ def operations_from_qnode(
     _ = qnode(*args, **kwargs)
     tape = qnode.tape
 
-    operations = []
+    operations: list[tuple[str, list[int], list[float | str] | None]] = []
     for op in tape.operations:
         gate_name = PENNYLANE_GATE_MAP.get(op.name, op.name)
         wires = list(op.wires)
-        params = [float(p) for p in op.parameters] if op.parameters else None
+        params: list[float | str] | None = [float(p) for p in op.parameters] if op.parameters else None
         operations.append((gate_name, wires, params))
 
     return operations

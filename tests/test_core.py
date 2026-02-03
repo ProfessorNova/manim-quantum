@@ -100,6 +100,220 @@ class TestQuantumCircuit:
         assert circuit.num_qubits == 2
         assert len(circuit._gates) == 3
 
+    def test_circuit_compression_disabled(self):
+        """Test circuit without compression (default behavior)."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=3, compress=False)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("H", [1])
+        circuit.add_gate("H", [2])
+
+        # Without compression, gates should be placed sequentially
+        positions = circuit._gate_x_positions
+        assert len(positions) == 3
+        # Each gate should be at a different x position
+        assert positions[0] != positions[1]
+        assert positions[1] != positions[2]
+
+    def test_circuit_compression_enabled(self):
+        """Test circuit with compression enabled."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=3, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("H", [1])
+        circuit.add_gate("H", [2])
+
+        # With compression, all three H gates on different wires should be at same x position
+        positions = circuit._gate_x_positions
+        assert len(positions) == 3
+        assert positions[0] == positions[1] == positions[2]
+
+    def test_circuit_compression_parallel_gates(self):
+        """Test that non-overlapping gates are parallelized."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=4, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("X", [1])
+        circuit.add_gate("Y", [2])
+        circuit.add_gate("Z", [3])
+
+        # All gates operate on different wires, so should be at same x position
+        positions = circuit._gate_x_positions
+        assert all(p == positions[0] for p in positions)
+
+    def test_circuit_compression_sequential_on_same_wire(self):
+        """Test that gates on the same wire remain sequential."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("X", [0])
+        circuit.add_gate("Y", [0])
+
+        # Gates on same wire must be sequential
+        positions = circuit._gate_x_positions
+        assert positions[0] < positions[1] < positions[2]
+
+    def test_circuit_compression_cnot_blocks_wires(self):
+        """Test that multi-qubit gates properly block all involved wires."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=3, compress=True)
+        circuit.add_gate("CNOT", [0, 1])  # Blocks wires 0 and 1
+        circuit.add_gate("H", [0])  # Must wait for CNOT
+        circuit.add_gate("H", [1])  # Must wait for CNOT
+        circuit.add_gate("H", [2])  # Can be parallel with CNOT
+
+        positions = circuit._gate_x_positions
+        # CNOT and H on wire 2 should be at same position (layer 0)
+        assert positions[0] == positions[3]
+        # H gates on wires 0 and 1 should be in next layer
+        assert positions[1] == positions[2]
+        assert positions[1] > positions[0]
+
+    def test_circuit_compression_mixed_scenario(self):
+        """Test complex scenario with mixed gate dependencies."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=4, compress=True)
+        # Layer 0: All parallel
+        circuit.add_gate("H", [0])
+        circuit.add_gate("H", [1])
+        circuit.add_gate("H", [2])
+        circuit.add_gate("H", [3])
+
+        # Layer 1: CNOT blocks 0,1; X blocks 2
+        circuit.add_gate("CNOT", [0, 1])
+        circuit.add_gate("X", [2])
+
+        # Layer 2: Y on wire 3 (can be in layer 1); Z on wire 0 (must be layer 2)
+        circuit.add_gate("Y", [3])
+        circuit.add_gate("Z", [0])
+
+        positions = circuit._gate_x_positions
+
+        # First 4 H gates should all be in layer 0
+        assert positions[0] == positions[1] == positions[2] == positions[3]
+
+        # CNOT and X should be in layer 1
+        assert positions[4] == positions[5]
+        assert positions[4] > positions[0]
+
+        # Y on wire 3 should be in layer 1 (parallel with CNOT and X)
+        assert positions[6] == positions[4]
+
+        # Z on wire 0 must wait for CNOT, so layer 2
+        assert positions[7] > positions[4]
+
+    def test_circuit_compression_depth_reduction(self):
+        """Test that compression actually reduces circuit depth."""
+        from manim_quantum import QuantumCircuit
+
+        # Without compression
+        circuit_uncompressed = QuantumCircuit(num_qubits=3, compress=False)
+        for i in range(3):
+            circuit_uncompressed.add_gate("H", [i])
+
+        # With compression
+        circuit_compressed = QuantumCircuit(num_qubits=3, compress=True)
+        for i in range(3):
+            circuit_compressed.add_gate("H", [i])
+
+        # Count unique x positions (layers)
+        uncompressed_depth = len(set(circuit_uncompressed._gate_x_positions))
+        compressed_depth = len(set(circuit_compressed._gate_x_positions))
+
+        # Compressed should have fewer layers
+        assert compressed_depth < uncompressed_depth
+        assert compressed_depth == 1  # All gates can be parallel
+        assert uncompressed_depth == 3  # All gates are sequential
+
+    def test_circuit_compression_preserves_functionality(self):
+        """Test that compression doesn't change gate order on same wire."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("X", [1])
+        circuit.add_gate("Y", [0])
+        circuit.add_gate("Z", [1])
+
+        # Check gates on wire 0: H then Y
+        wire_0_gates = [g for g in circuit._gates if 0 in g.target_wires]
+        assert len(wire_0_gates) == 2
+        assert wire_0_gates[0].name == "H"
+        assert wire_0_gates[1].name == "Y"
+
+        # Check gates on wire 1: X then Z
+        wire_1_gates = [g for g in circuit._gates if 1 in g.target_wires]
+        assert len(wire_1_gates) == 2
+        assert wire_1_gates[0].name == "X"
+        assert wire_1_gates[1].name == "Z"
+
+    def test_circuit_center_disabled(self):
+        """Test circuit with centering disabled (default)."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, x_start=-5, x_end=5, center=False)
+        circuit.add_gate("H", [0])
+        circuit.build()
+
+        # Without centering, gates start from x_start + 1.5
+        positions = circuit._gate_x_positions
+        expected_start = -5 + 1.5  # x_start + 1.5
+        assert abs(positions[0] - expected_start) < 0.001
+
+    def test_circuit_center_enabled(self):
+        """Test circuit with centering enabled."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, x_start=-5, x_end=5, center=True)
+        circuit.add_gate("H", [0])
+        circuit.build()
+
+        # With centering and single gate, gate should be at circuit center
+        positions = circuit._gate_x_positions
+        circuit_center = (-5 + 5) / 2  # 0
+        assert abs(positions[0] - circuit_center) < 0.001
+
+    def test_circuit_center_multiple_gates(self):
+        """Test centering with multiple gates."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=2, x_start=-5, x_end=5, center=True, compress=False)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("X", [0])
+        circuit.add_gate("Y", [0])
+        circuit.build()
+
+        # Gates center should be at circuit center
+        positions = circuit._gate_x_positions
+        gates_center = (min(positions) + max(positions)) / 2
+        circuit_center = (-5 + 5) / 2  # 0
+        assert abs(gates_center - circuit_center) < 0.001
+
+    def test_circuit_center_with_compression(self):
+        """Test centering works with compression."""
+        from manim_quantum import QuantumCircuit
+
+        circuit = QuantumCircuit(num_qubits=3, x_start=-6, x_end=6, center=True, compress=True)
+        circuit.add_gate("H", [0])
+        circuit.add_gate("H", [1])
+        circuit.add_gate("H", [2])
+        circuit.add_gate("X", [0])
+        circuit.build()
+
+        # All H gates should be at same position, X at another
+        positions = circuit._gate_x_positions
+        # With compression: H gates at layer 0, X at layer 1
+        # After centering, their average should be near circuit center
+        gates_center = (min(positions) + max(positions)) / 2
+        circuit_center = (-6 + 6) / 2  # 0
+        assert abs(gates_center - circuit_center) < 0.001
+
 
 class TestQuantumGate:
     """Tests for QuantumGate class."""
@@ -223,34 +437,34 @@ class TestBlochSphere:
 
         sphere = BlochSphere()
         assert sphere.radius == 2.0
-        assert sphere._theta == 0.0
-        assert sphere._phi == 0.0
+        assert sphere.get_theta() == 0.0
+        assert sphere.get_phi() == 0.0
 
     def test_bloch_sphere_with_initial_state(self):
         """Test Bloch sphere with initial state."""
         from manim_quantum import BlochSphere
 
         sphere = BlochSphere(initial_state=(np.pi / 2, 0))
-        assert np.isclose(sphere._theta, np.pi / 2)
-        assert np.isclose(sphere._phi, 0)
+        assert np.isclose(sphere.get_theta(), np.pi / 2)
+        assert np.isclose(sphere.get_phi(), 0)
 
     def test_basis_state_creation(self):
         """Test basis state Bloch sphere."""
         from manim_quantum import BlochSphere
 
         sphere = BlochSphere.basis_state("0")
-        assert sphere._theta == 0
+        assert sphere.get_theta() == 0
 
         sphere = BlochSphere.basis_state("1")
-        assert np.isclose(sphere._theta, np.pi)
+        assert np.isclose(sphere.get_theta(), np.pi)
 
     def test_plus_state(self):
         """Test |+⟩ state Bloch sphere."""
         from manim_quantum import BlochSphere
 
         sphere = BlochSphere.plus_state()
-        assert np.isclose(sphere._theta, np.pi / 2)
-        assert np.isclose(sphere._phi, 0)
+        assert np.isclose(sphere.get_theta(), np.pi / 2)
+        assert np.isclose(sphere.get_phi(), 0)
 
     def test_set_state(self):
         """Test setting Bloch sphere state."""
@@ -259,8 +473,8 @@ class TestBlochSphere:
         sphere = BlochSphere()
         sphere.set_state(np.pi / 4, np.pi / 3)
 
-        assert np.isclose(sphere._theta, np.pi / 4)
-        assert np.isclose(sphere._phi, np.pi / 3)
+        assert np.isclose(sphere.get_theta(), np.pi / 4)
+        assert np.isclose(sphere.get_phi(), np.pi / 3)
 
     def test_get_state_amplitudes(self):
         """Test getting state amplitudes."""
@@ -271,6 +485,35 @@ class TestBlochSphere:
         alpha, beta = sphere.get_state_amplitudes()
         assert np.isclose(abs(alpha), 1.0)
         assert np.isclose(abs(beta), 0.0)
+
+    def test_set_state_updates_arrow_in_place(self):
+        """Test that set_state updates arrow without recreating it."""
+        from manim_quantum import BlochSphere
+
+        sphere = BlochSphere()
+        original_arrow = sphere.state_arrow
+
+        # Update state
+        sphere.set_state(np.pi / 2, np.pi / 4)
+
+        # Arrow should be the same object, just updated
+        assert sphere.state_arrow is original_arrow
+        assert np.isclose(sphere.get_theta(), np.pi / 2)
+        assert np.isclose(sphere.get_phi(), np.pi / 4)
+
+    def test_get_theta(self):
+        """Test get_theta method."""
+        from manim_quantum import BlochSphere
+
+        sphere = BlochSphere(initial_state=(np.pi / 3, np.pi / 4))
+        assert np.isclose(sphere.get_theta(), np.pi / 3)
+
+    def test_get_phi(self):
+        """Test get_phi method."""
+        from manim_quantum import BlochSphere
+
+        sphere = BlochSphere(initial_state=(np.pi / 3, np.pi / 4))
+        assert np.isclose(sphere.get_phi(), np.pi / 4)
 
 
 class TestQuantumStyle:
@@ -380,3 +623,98 @@ class TestCircuitEvaluationAnimation:
 
         anim = anim_factory.create_shot_animation(wires=[0])
         assert anim is not None
+
+
+class TestBlochSphereAnimations:
+    """Tests for Bloch sphere animation classes."""
+
+    def test_state_transition_creation(self):
+        """Test BlochSphereStateTransition creation."""
+        from manim_quantum import BlochSphere, BlochSphereStateTransition
+
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereStateTransition(sphere, np.pi / 2, 0)
+
+        assert anim.bloch_sphere is sphere
+        assert np.isclose(anim.initial_theta, 0)
+        assert np.isclose(anim.initial_phi, 0)
+        assert np.isclose(anim.target_theta, np.pi / 2)
+        assert np.isclose(anim.target_phi, 0)
+
+    def test_state_transition_interpolation(self):
+        """Test BlochSphereStateTransition interpolation."""
+        from manim_quantum import BlochSphere, BlochSphereStateTransition
+
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereStateTransition(sphere, np.pi, 0)
+
+        # Test interpolation at alpha=0.5 (halfway)
+        anim.interpolate_mobject(0.5)
+        assert np.isclose(sphere.get_theta(), np.pi / 2)
+        assert np.isclose(sphere.get_phi(), 0)
+
+        # Test interpolation at alpha=1.0 (end)
+        anim.interpolate_mobject(1.0)
+        assert np.isclose(sphere.get_theta(), np.pi)
+        assert np.isclose(sphere.get_phi(), 0)
+
+    def test_rotation_animation_creation(self):
+        """Test BlochSphereRotation creation."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereRotation(sphere, "y", np.pi / 2)
+
+        assert anim.bloch_sphere is sphere
+        assert anim.axis == "y"
+        assert np.isclose(anim.angle, np.pi / 2)
+
+    def test_rotation_around_y_axis(self):
+        """Test rotation around Y axis."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+
+        # Start at |0⟩ (north pole)
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereRotation(sphere, "y", np.pi / 2)
+
+        # After π/2 rotation around Y, should be at equator
+        anim.interpolate_mobject(1.0)
+        assert np.isclose(sphere.get_theta(), np.pi / 2, atol=1e-6)
+
+    def test_rotation_around_x_axis(self):
+        """Test rotation around X axis."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+
+        sphere = BlochSphere.basis_state("0")
+        anim = BlochSphereRotation(sphere, "x", np.pi / 2)
+
+        # Rotation should update the state
+        anim.interpolate_mobject(1.0)
+        # State should have changed from initial
+        assert not (np.isclose(sphere.get_theta(), 0) and np.isclose(sphere.get_phi(), 0))
+
+    def test_rotation_around_z_axis(self):
+        """Test rotation around Z axis."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+
+        # Start at |+⟩ (on equator at phi=0)
+        sphere = BlochSphere.plus_state()
+        anim = BlochSphereRotation(sphere, "z", np.pi / 2)
+
+        # After π/2 rotation around Z, phi should change by π/2
+        initial_phi = sphere.get_phi()
+        anim.interpolate_mobject(1.0)
+        # Theta should stay the same (still on equator)
+        assert np.isclose(sphere.get_theta(), np.pi / 2, atol=1e-6)
+        # Phi should have rotated
+        assert np.isclose(sphere.get_phi(), initial_phi + np.pi / 2, atol=1e-6)
+
+    def test_rotation_invalid_axis(self):
+        """Test that invalid axis raises error."""
+        from manim_quantum import BlochSphere, BlochSphereRotation
+        import pytest
+
+        sphere = BlochSphere.basis_state("0")
+
+        with pytest.raises(ValueError, match="Invalid axis"):
+            BlochSphereRotation(sphere, "w", np.pi / 2)
