@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from manim import (
     DOWN,
+    LEFT,
     RIGHT,
     MathTex,
     Rectangle,
@@ -114,7 +115,6 @@ class StateVector(VGroup):
     def _build_probability_bars(self) -> None:
         """Build probability bar visualization."""
         probabilities = np.abs(self.amplitudes) ** 2
-        max_prob = max(probabilities) if max(probabilities) > 0 else 1
 
         bar_group = VGroup()
         max_bar_width = 2.0
@@ -126,8 +126,8 @@ class StateVector(VGroup):
             ket = KetLabel(basis, style=self.style)
             ket.scale(0.7)
 
-            # Probability bar
-            bar_width = (prob / max_prob) * max_bar_width if max_prob > 0 else 0
+            # Probability bar - scales linearly with probability (1.0 = max_bar_width)
+            bar_width = prob * max_bar_width
             bar = Rectangle(
                 width=max(bar_width, 0.02),
                 height=bar_height,
@@ -137,12 +137,24 @@ class StateVector(VGroup):
                 stroke_width=1,
             )
 
+            # Create a fixed-width container for the bar so center stays consistent
+            bar_container = Rectangle(
+                width=max_bar_width,
+                height=bar_height,
+                stroke_opacity=0,
+                fill_opacity=0,
+            )
+            # Align bar to the left edge of the container
+            bar.move_to(bar_container.get_left(), aligned_edge=LEFT)
+
+            bar_with_container = VGroup(bar_container, bar)
+
             # Probability value
             prob_label = MathTex(f"{prob:.3f}", color=self.style.probability_text_color)
             prob_label.scale(0.5)
 
-            # Arrange row: probability value on left, bar in middle, ket on right
-            row = VGroup(prob_label, bar, ket)
+            # Arrange row: probability value on left, bar container in middle, ket on right
+            row = VGroup(prob_label, bar_with_container, ket)
             row.arrange(RIGHT, buff=0.2)
 
             bar_group.add(row)
