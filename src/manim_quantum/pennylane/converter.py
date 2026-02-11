@@ -13,10 +13,12 @@ if TYPE_CHECKING:
 class QNodeProtocol(Protocol):
     """Protocol for PennyLane QNode objects."""
 
-    tape: Any
-
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the QNode."""
+        ...
+
+    def construct(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
+        """Construct the tape from the QNode."""
         ...
 
 
@@ -40,10 +42,23 @@ PENNYLANE_GATE_MAP = {
 }
 
 
+# Circuit configuration keys that should NOT be passed to the QNode
+CIRCUIT_CONFIG_KEYS = {
+    "style", "wire_labels", "x_start", "x_end", "wire_spacing",
+    "compress", "center"
+}
+
+
 def circuit_from_qnode(
         qnode: QNodeProtocol,
         *args: Any,
         style: "QuantumStyle | None" = None,
+        wire_labels: list[str] | None = None,
+        x_start: float = -5.5,
+        x_end: float = 5.5,
+        wire_spacing: float = 1.0,
+        compress: bool = True,
+        center: bool = True,
         **kwargs: Any,
 ) -> "QuantumCircuit":
     """
@@ -56,6 +71,12 @@ def circuit_from_qnode(
         qnode: A PennyLane QNode function.
         *args: Positional arguments to pass to the QNode.
         style: Visual style configuration.
+        wire_labels: Optional custom labels for each wire.
+        x_start: Left boundary of the circuit.
+        x_end: Right boundary of the circuit.
+        wire_spacing: Vertical spacing between wires.
+        compress: If True, gates are arranged in compact form.
+        center: If True, gates are centered horizontally.
         **kwargs: Keyword arguments to pass to the QNode.
 
     Returns:
@@ -81,17 +102,24 @@ def circuit_from_qnode(
 
     from manim_quantum.circuits.circuit import QuantumCircuit
 
-    # Execute the QNode to populate the tape
-    _ = qnode(*args, **kwargs)
-
-    # Get the tape (circuit representation)
-    tape = qnode.tape
+    # Use construct() to get the tape (works with PennyLane 0.44.0+)
+    # Only pass kwargs that are meant for the QNode (not circuit config)
+    tape = qnode.construct(args, kwargs)
 
     # Determine number of qubits
     num_wires = len(tape.wires)
 
-    # Create the circuit
-    circuit = QuantumCircuit(num_qubits=num_wires, style=style)
+    # Create the circuit with configuration options
+    circuit = QuantumCircuit(
+        num_qubits=num_wires,
+        style=style,
+        wire_labels=wire_labels,
+        x_start=x_start,
+        x_end=x_end,
+        wire_spacing=wire_spacing,
+        compress=compress,
+        center=center,
+    )
 
     # Add gates from the tape
     for op in tape.operations:
@@ -138,9 +166,8 @@ def operations_from_qnode(
             "Install it with: pip install pennylane"
         )
 
-    # Execute the QNode to populate the tape
-    _ = qnode(*args, **kwargs)
-    tape = qnode.tape
+    # Use construct() to get the tape (works with PennyLane 0.44.0+)
+    tape = qnode.construct(args, kwargs)
 
     operations: list[tuple[str, list[int], list[float | str] | None]] = []
     for op in tape.operations:
