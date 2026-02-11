@@ -14,7 +14,6 @@ from manim import (
     LEFT,
     RIGHT,
     UP,
-    Create,
     FadeIn,
     FadeOut,
     MathTex,
@@ -59,7 +58,7 @@ class BellStateCircuit(Scene):
         circuit.build()
 
         # Position and show circuit (no default offset)
-        self.play(Create(circuit), run_time=2)
+        self.play(Write(circuit), run_time=2)
         self.wait(0.5)
 
         # Use the animations module for circuit evaluation
@@ -208,7 +207,7 @@ class StyleShowcase(Scene):
             circuits.append((circuit, label))
 
         for circuit, label in circuits:
-            self.play(Create(circuit), Write(label), run_time=1)
+            self.play(Write(circuit), Write(label), run_time=1)
 
         self.wait(2)
 

@@ -92,7 +92,9 @@ class CircuitEvaluationAnimation:
         Returns:
             Animation showing particle flow.
         """
-        color = color or self.circuit.style.glow_color or BLUE
+        style = getattr(self.circuit, "style", None)
+        glow_color = getattr(style, "glow_color", BLUE)
+        color = color or glow_color
         wires = wires if wires is not None else list(self.circuit._wires.keys())
 
         anims = []
@@ -150,7 +152,9 @@ class CircuitEvaluationAnimation:
         Returns:
             Animation object.
         """
-        color = color or self.circuit.style.glow_color or BLUE
+        style = getattr(self.circuit, "style", None)
+        glow_color = getattr(style, "glow_color", BLUE)
+        color = color or glow_color
         wires = wires if wires is not None else list(self.circuit._wires.keys())
 
         anims = []

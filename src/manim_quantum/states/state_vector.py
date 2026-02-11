@@ -11,6 +11,7 @@ from manim import (
     RIGHT,
     MathTex,
     Rectangle,
+    Text,
     VGroup,
 )
 
@@ -86,10 +87,9 @@ class StateVector(VGroup):
             ket = KetLabel(basis, style=self.style)
 
             if amp_str:
-                term = VGroup(
-                    MathTex(amp_str, color=self.style.amplitude_color),
-                    ket,
-                )
+                # Always use MathTex for amplitude labels
+                amp_label = MathTex(amp_str, color=self.style.amplitude_color)
+                term = VGroup(amp_label, ket)
                 term.arrange(RIGHT, buff=0.05)
             else:
                 term = ket
@@ -98,13 +98,20 @@ class StateVector(VGroup):
 
         if not terms:
             # Zero state
-            terms.append(MathTex("0", color=self.style.amplitude_color))
+            if use_latex:
+                zero_label = MathTex("0", color=self.style.amplitude_color)
+            else:
+                zero_label = Text("0", color=self.style.amplitude_color)
+            terms.append(zero_label)
 
         # Arrange terms with + signs
         full_expr = VGroup()
         for i, term in enumerate(terms):
             if i > 0:
-                plus = MathTex("+", color=self.style.amplitude_color)
+                if use_latex:
+                    plus = MathTex("+", color=self.style.amplitude_color)
+                else:
+                    plus = Text("+", color=self.style.amplitude_color)
                 plus.scale(0.8)
                 full_expr.add(plus)
             full_expr.add(term)
@@ -150,6 +157,8 @@ class StateVector(VGroup):
             bar_with_container = VGroup(bar_container, bar)
 
             # Probability value
+            # Always use MathTex for probability labels as it's more reliable across platforms
+            # (Text class can have font issues on Windows)
             prob_label = MathTex(f"{prob:.3f}", color=self.style.probability_text_color)
             prob_label.scale(0.5)
 
@@ -174,6 +183,7 @@ class StateVector(VGroup):
                 return ""
             elif abs(real + 1) < 1e-10:
                 return "-"
+            # Always use LaTeX formatting for special fractions
             elif abs(real - 1 / np.sqrt(2)) < 1e-10:
                 return r"\frac{1}{\sqrt{2}}"
             elif abs(real + 1 / np.sqrt(2)) < 1e-10:

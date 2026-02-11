@@ -102,11 +102,10 @@ class QuantumGate(VGroup):
 
         group = VGroup()
 
-        # Gate label (create first to measure size)
-        label_text = self._get_gate_label()
-        label = MathTex(label_text, color=self.style.gate_text_color)
+        # Create gate label (may be hybrid for parameterized gates)
+        label = self._create_gate_label()
         label.scale(self.style.gate_font_scale)
-        label.move_to([x, y, 0])
+        label.move_to(np.array([x, y, 0]))
 
         # Calculate box width based on label width with padding
         label_width = label.width
@@ -124,7 +123,8 @@ class QuantumGate(VGroup):
             stroke_color=self.style.gate_stroke_color,
             stroke_width=self.style.gate_stroke_width,
         )
-        box.move_to([x, y, 0])
+        box.move_to(np.array([x, y, 0]))
+
         group.add(box)
         group.add(label)
 
@@ -144,8 +144,8 @@ class QuantumGate(VGroup):
 
         # Vertical line connecting control and target
         conn_line = Line(
-            start=[x, control_y, 0],
-            end=[x, target_y, 0],
+            start=np.array([x, control_y, 0]),
+            end=np.array([x, target_y, 0]),
             color=self.style.gate_stroke_color,
             stroke_width=self.style.wire_stroke_width,
         )
@@ -153,7 +153,7 @@ class QuantumGate(VGroup):
 
         # Control dot
         control_dot = Dot(
-            point=[x, control_y, 0],
+            point=np.array([x, control_y, 0]),
             radius=self.style.control_dot_radius,
             color=self.style.control_dot_color,
         )
@@ -165,19 +165,19 @@ class QuantumGate(VGroup):
             color=self.style.gate_stroke_color,
             stroke_width=self.style.gate_stroke_width,
         )
-        target_circle.move_to([x, target_y, 0])
+        target_circle.move_to(np.array([x, target_y, 0]))
         group.add(target_circle)
 
         # Cross lines inside target circle
         cross_h = Line(
-            start=[x - self.style.target_radius, target_y, 0],
-            end=[x + self.style.target_radius, target_y, 0],
+            start=np.array([x - self.style.target_radius, target_y, 0]),
+            end=np.array([x + self.style.target_radius, target_y, 0]),
             color=self.style.gate_stroke_color,
             stroke_width=self.style.gate_stroke_width,
         )
         cross_v = Line(
-            start=[x, target_y - self.style.target_radius, 0],
-            end=[x, target_y + self.style.target_radius, 0],
+            start=np.array([x, target_y - self.style.target_radius, 0]),
+            end=np.array([x, target_y + self.style.target_radius, 0]),
             color=self.style.gate_stroke_color,
             stroke_width=self.style.gate_stroke_width,
         )
@@ -201,8 +201,8 @@ class QuantumGate(VGroup):
 
         # Vertical line
         conn_line = Line(
-            start=[x, control_y, 0],
-            end=[x, target_y, 0],
+            start=np.array([x, control_y, 0]),
+            end=np.array([x, target_y, 0]),
             color=self.style.gate_stroke_color,
             stroke_width=self.style.wire_stroke_width,
         )
@@ -210,7 +210,7 @@ class QuantumGate(VGroup):
 
         # Control dot
         control_dot = Dot(
-            point=[x, control_y, 0],
+            point=np.array([x, control_y, 0]),
             radius=self.style.control_dot_radius,
             color=self.style.control_dot_color,
         )
@@ -226,12 +226,14 @@ class QuantumGate(VGroup):
             stroke_color=self.style.gate_stroke_color,
             stroke_width=self.style.gate_stroke_width,
         )
-        box.move_to([x, target_y, 0])
+        box.move_to(np.array([x, target_y, 0]))
         group.add(box)
 
+        # Always use MathTex for gate labels
         label = MathTex(gate_label, color=self.style.gate_text_color)
+
         label.scale(self.style.gate_font_scale * 0.8)
-        label.move_to([x, target_y, 0])
+        label.move_to(np.array([x, target_y, 0]))
         group.add(label)
 
         self._mask_width = self.style.gate_width
@@ -250,8 +252,8 @@ class QuantumGate(VGroup):
 
         # Vertical line
         conn_line = Line(
-            start=[x, y1, 0],
-            end=[x, y2, 0],
+            start=np.array([x, y1, 0]),
+            end=np.array([x, y2, 0]),
             color=self.style.gate_stroke_color,
             stroke_width=self.style.wire_stroke_width,
         )
@@ -261,14 +263,14 @@ class QuantumGate(VGroup):
         for y in [y1, y2]:
             size = 0.15
             cross1 = Line(
-                start=[x - size, y - size, 0],
-                end=[x + size, y + size, 0],
+                start=np.array([x - size, y - size, 0]),
+                end=np.array([x + size, y + size, 0]),
                 color=self.style.gate_stroke_color,
                 stroke_width=self.style.gate_stroke_width,
             )
             cross2 = Line(
-                start=[x - size, y + size, 0],
-                end=[x + size, y - size, 0],
+                start=np.array([x - size, y + size, 0]),
+                end=np.array([x + size, y - size, 0]),
                 color=self.style.gate_stroke_color,
                 stroke_width=self.style.gate_stroke_width,
             )
@@ -296,19 +298,19 @@ class QuantumGate(VGroup):
                 stroke_color=self.style.gate_stroke_color,
                 stroke_width=self.style.gate_stroke_width,
             )
-            box.move_to([x, y, 0])
+            box.move_to(np.array([x, y, 0]))
             group.add(box)
 
             # Meter arc
             arc_radius = self.style.gate_height * 0.25
-            arc_center = [x, y - arc_radius * 0.3, 0]
+            arc_center = np.array([x, y - arc_radius * 0.3, 0])
 
             # Simple arc representation using lines
             arc_points = []
             for angle in np.linspace(np.pi, 0, 10):
                 px = arc_center[0] + arc_radius * np.cos(angle)
                 py = arc_center[1] + arc_radius * np.sin(angle)
-                arc_points.append([px, py, 0])
+                arc_points.append(np.array([px, py, 0]))
 
             for i in range(len(arc_points) - 1):
                 seg = Line(
@@ -322,7 +324,7 @@ class QuantumGate(VGroup):
             # Meter needle
             needle = Line(
                 start=arc_center,
-                end=[x + arc_radius * 0.7, y + arc_radius * 0.5, 0],
+                end=np.array([x + arc_radius * 0.7, y + arc_radius * 0.5, 0]),
                 color=self.style.gate_text_color,
                 stroke_width=1.5,
             )
@@ -352,17 +354,54 @@ class QuantumGate(VGroup):
             stroke_color=self.style.gate_stroke_color,
             stroke_width=self.style.gate_stroke_width,
         )
-        box.move_to([x, y_center, 0])
+        box.move_to(np.array([x, y_center, 0]))
+
         group.add(box)
 
+        # Always use MathTex for gate labels
         label = MathTex(self.name, color=self.style.gate_text_color)
         label.scale(self.style.gate_font_scale)
-        label.move_to([x, y_center, 0])
+        label.move_to(np.array([x, y_center, 0]))
         group.add(label)
 
         self._mask_width = self.style.gate_width
 
         return group
+
+    def _create_gate_label(self) -> VGroup | MathTex:
+        """Create the gate label for parameterized and non-parameterized gates."""
+        # Check if this is a parameterized rotation gate
+        if self.name in {"RX", "RY", "RZ"} and self.params:
+            angle = self.params[0]
+
+            # If angle is a string, render the whole thing as LaTeX
+            if isinstance(angle, str):
+                label_text = f"{self.name}({angle})"
+                return MathTex(label_text, color=self.style.gate_text_color)
+
+            # Create hybrid label with MathTex components
+            gate_name_label = MathTex(f"{self.name}(", color=self.style.gate_text_color)
+
+            # Use LaTeX for special values
+            if abs(angle - np.pi) < 0.01:
+                angle_str = r"\pi"
+            elif abs(angle - np.pi / 2) < 0.01:
+                angle_str = r"\frac{\pi}{2}"
+            elif abs(angle - np.pi / 4) < 0.01:
+                angle_str = r"\frac{\pi}{4}"
+            else:
+                angle_str = f"{angle:.2f}"
+            param_label = MathTex(angle_str, color=self.style.gate_text_color)
+            closing_paren = MathTex(")", color=self.style.gate_text_color)
+
+            # Combine labels
+            hybrid_label = VGroup(gate_name_label, param_label, closing_paren)
+            hybrid_label.arrange(buff=0.02)
+            return hybrid_label
+
+        # For non-parameterized gates, always use MathTex
+        label_text = self._get_gate_label()
+        return MathTex(label_text, color=self.style.gate_text_color)
 
     def _get_gate_label(self) -> str:
         """Get the display label for the gate."""
@@ -378,7 +417,8 @@ class QuantumGate(VGroup):
             # If angle is a string, use it directly
             if isinstance(angle, str):
                 return f"{self.name}({angle})"
-            # Format angle nicely for floats
+
+            # Format angle nicely with LaTeX for common values
             if abs(angle - np.pi) < 0.01:
                 angle_str = r"\pi"
             elif abs(angle - np.pi / 2) < 0.01:
@@ -387,6 +427,7 @@ class QuantumGate(VGroup):
                 angle_str = r"\frac{\pi}{4}"
             else:
                 angle_str = f"{angle:.2f}"
+
             return f"{self.name}({angle_str})"
 
         return self.name
