@@ -17,6 +17,7 @@ from manim import (
     LaggedStart,
     Line,
     MoveAlongPath,
+    ShowPassingFlash,
     Succession,
     VGroup,
     linear,
@@ -77,63 +78,19 @@ class CircuitEvaluationAnimation:
             wires: list[int] | None = None,
             color=None,
             run_time: float = 2.0,
+            lag_ratio: float = 0.0,
     ) -> Animation:
         """
-        Create an animation showing particles (shots) flowing through wires.
-
-        The particles travel along the actual wire y-coordinates.
+        Create an animation showing glowing particles flowing through wires.
 
         Args:
             wires: Wire indices to animate (all if None).
             color: Particle color.
             run_time: Total animation duration.
-
-        Returns:
-            Animation showing particle flow.
-        """
-        color = color or BLUE
-        wires = wires if wires is not None else list(self.circuit._wires.keys())
-
-        anims = []
-        for wire_idx in wires:
-            wire = self.circuit._wires.get(wire_idx)
-            if wire is None:
-                continue
-
-            # Use wire's actual y position
-            y = wire.y
-            start = np.array([self.circuit.x_start, y, 0])
-            end = np.array([self.circuit.x_end, y, 0])
-
-            # Create particle
-            particle = Dot(radius=0.08, color=color)
-            particle.move_to(start)
-
-            path = Line(start, end)
-            anims.append(
-                MoveAlongPath(particle, path, run_time=run_time, rate_func=linear)
-            )
-
-        return AnimationGroup(*anims) if anims else AnimationGroup()
-
-    def create_glow_animation(
-            self,
-            wires: list[int] | None = None,
-            color=None,
-            run_time: float = 1.2,
-            lag_ratio: float = 0.0,
-    ) -> Animation:
-        """
-        Create a glowing dot animation traveling along wires.
-
-        Args:
-            wires: Wire indices to animate (all if None).
-            color: Glow color.
-            run_time: Animation duration per wire.
             lag_ratio: Stagger ratio between wires.
 
         Returns:
-            Animation object.
+            Animation showing particle flow.
         """
         color = color or self.circuit.style.glow_color or BLUE
         wires = wires if wires is not None else list(self.circuit._wires.keys())
@@ -169,6 +126,47 @@ class CircuitEvaluationAnimation:
                 FadeOut(packet, run_time=fade_time),
             )
             anims.append(seq)
+
+        if not anims:
+            return AnimationGroup()
+        return LaggedStart(*anims, lag_ratio=lag_ratio)
+
+    def create_glow_animation(
+            self,
+            wires: list[int] | None = None,
+            color=None,
+            run_time: float = 1.2,
+            lag_ratio: float = 0.0,
+    ) -> Animation:
+        """
+        Create an animation that makes wires glow.
+
+        Args:
+            wires: Wire indices to animate (all if None).
+            color: Glow color.
+            run_time: Animation duration.
+            lag_ratio: Stagger ratio between wires.
+
+        Returns:
+            Animation object.
+        """
+        color = color or self.circuit.style.glow_color or BLUE
+        wires = wires if wires is not None else list(self.circuit._wires.keys())
+
+        anims = []
+        for wire_idx in wires:
+            wire = self.circuit._wires.get(wire_idx)
+            if wire is None:
+                continue
+
+            y = wire.y
+            start = np.array([self.circuit.x_start, y, 0])
+            end = np.array([self.circuit.x_end, y, 0])
+
+            glow_line = Line(start, end)
+            glow_line.set_stroke(color, width=8, opacity=0.7)
+
+            anims.append(ShowPassingFlash(glow_line, run_time=run_time, time_width=0.3))
 
         if not anims:
             return AnimationGroup()
