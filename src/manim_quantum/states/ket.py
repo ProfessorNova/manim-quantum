@@ -40,7 +40,7 @@ class KetLabel(VGroup):
 
     def _build(self) -> None:
         """Build the ket label."""
-        # Create the ket notation
+        # Kets always use LaTeX for proper mathematical notation
         tex = MathTex(
             f"|{self.content}\\rangle",
             color=self.style.ket_color,

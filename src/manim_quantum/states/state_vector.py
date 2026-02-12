@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from manim import (
     DOWN,
+    LEFT,
     RIGHT,
     MathTex,
     Rectangle,
@@ -62,8 +63,6 @@ class StateVector(VGroup):
 
     def _build(self) -> None:
         """Build the state vector visualization."""
-        n_states = len(self.amplitudes)
-
         if self.show_probabilities:
             self._build_probability_bars()
         else:
@@ -85,10 +84,9 @@ class StateVector(VGroup):
             ket = KetLabel(basis, style=self.style)
 
             if amp_str:
-                term = VGroup(
-                    MathTex(amp_str, color=self.style.amplitude_color),
-                    ket,
-                )
+                # Always use MathTex for amplitude labels
+                amp_label = MathTex(amp_str, color=self.style.amplitude_color)
+                term = VGroup(amp_label, ket)
                 term.arrange(RIGHT, buff=0.05)
             else:
                 term = ket
@@ -97,7 +95,8 @@ class StateVector(VGroup):
 
         if not terms:
             # Zero state
-            terms.append(MathTex("0", color=self.style.amplitude_color))
+            zero_label = MathTex("0", color=self.style.amplitude_color)
+            terms.append(zero_label)
 
         # Arrange terms with + signs
         full_expr = VGroup()
@@ -114,7 +113,6 @@ class StateVector(VGroup):
     def _build_probability_bars(self) -> None:
         """Build probability bar visualization."""
         probabilities = np.abs(self.amplitudes) ** 2
-        max_prob = max(probabilities) if max(probabilities) > 0 else 1
 
         bar_group = VGroup()
         max_bar_width = 2.0
@@ -126,8 +124,8 @@ class StateVector(VGroup):
             ket = KetLabel(basis, style=self.style)
             ket.scale(0.7)
 
-            # Probability bar
-            bar_width = (prob / max_prob) * max_bar_width if max_prob > 0 else 0
+            # Probability bar - scales linearly with probability (1.0 = max_bar_width)
+            bar_width = prob * max_bar_width
             bar = Rectangle(
                 width=max(bar_width, 0.02),
                 height=bar_height,
@@ -137,12 +135,26 @@ class StateVector(VGroup):
                 stroke_width=1,
             )
 
+            # Create a fixed-width container for the bar so center stays consistent
+            bar_container = Rectangle(
+                width=max_bar_width,
+                height=bar_height,
+                stroke_opacity=0,
+                fill_opacity=0,
+            )
+            # Align bar to the left edge of the container
+            bar.move_to(bar_container.get_left(), aligned_edge=LEFT)
+
+            bar_with_container = VGroup(bar_container, bar)
+
             # Probability value
+            # Always use MathTex for probability labels as it's more reliable across platforms
+            # (Text class can have font issues on Windows)
             prob_label = MathTex(f"{prob:.3f}", color=self.style.probability_text_color)
             prob_label.scale(0.5)
 
-            # Arrange row: probability value on left, bar in middle, ket on right
-            row = VGroup(prob_label, bar, ket)
+            # Arrange row: probability value on left, bar container in middle, ket on right
+            row = VGroup(prob_label, bar_with_container, ket)
             row.arrange(RIGHT, buff=0.2)
 
             bar_group.add(row)
@@ -150,7 +162,8 @@ class StateVector(VGroup):
         bar_group.arrange(DOWN, buff=0.2, aligned_edge=RIGHT)
         self.add(bar_group)
 
-    def _format_amplitude(self, amp: complex) -> str:
+    @staticmethod
+    def _format_amplitude(amp: complex) -> str:
         """Format a complex amplitude for display."""
         real = amp.real
         imag = amp.imag
@@ -162,6 +175,7 @@ class StateVector(VGroup):
                 return ""
             elif abs(real + 1) < 1e-10:
                 return "-"
+            # Always use LaTeX formatting for special fractions
             elif abs(real - 1 / np.sqrt(2)) < 1e-10:
                 return r"\frac{1}{\sqrt{2}}"
             elif abs(real + 1 / np.sqrt(2)) < 1e-10:

@@ -70,8 +70,8 @@ class QuantumWire(VGroup):
     def _build_initial(self) -> None:
         """Build the initial wire (single line)."""
         line = Line(
-            start=[self.x_start, self.y, 0],
-            end=[self.x_end, self.y, 0],
+            start=np.array([self.x_start, self.y, 0]),
+            end=np.array([self.x_end, self.y, 0]),
             color=self.style.wire_color,
             stroke_width=self.style.wire_stroke_width,
         )
@@ -80,13 +80,14 @@ class QuantumWire(VGroup):
 
         # Add label if provided
         if self.label_text:
+            # Wire labels (typically kets) always use LaTeX
             self._label = MathTex(
                 self.label_text,
                 color=self.style.wire_label_color,
             )
             self._label.scale(self.style.wire_label_scale)
             self._label.next_to(
-                [self.x_start, self.y, 0],
+                np.array([self.x_start, self.y, 0]),
                 LEFT,
                 buff=self.style.wire_label_buff,
             )
@@ -129,8 +130,8 @@ class QuantumWire(VGroup):
         if not self._masked_regions:
             # No masks, single line
             line = Line(
-                start=[self.x_start, self.y, 0],
-                end=[self.x_end, self.y, 0],
+                start=np.array([self.x_start, self.y, 0]),
+                end=np.array([self.x_end, self.y, 0]),
                 color=self.style.wire_color,
                 stroke_width=self.style.wire_stroke_width,
             )
@@ -150,8 +151,8 @@ class QuantumWire(VGroup):
             # Segment before this mask
             if current_x < mask_start:
                 line = Line(
-                    start=[current_x, self.y, 0],
-                    end=[mask_start, self.y, 0],
+                    start=np.array([current_x, self.y, 0]),
+                    end=np.array([mask_start, self.y, 0]),
                     color=self.style.wire_color,
                     stroke_width=self.style.wire_stroke_width,
                 )
@@ -163,8 +164,8 @@ class QuantumWire(VGroup):
         # Final segment after last mask
         if current_x < self.x_end:
             line = Line(
-                start=[current_x, self.y, 0],
-                end=[self.x_end, self.y, 0],
+                start=np.array([current_x, self.y, 0]),
+                end=np.array([self.x_end, self.y, 0]),
                 color=self.style.wire_color,
                 stroke_width=self.style.wire_stroke_width,
             )

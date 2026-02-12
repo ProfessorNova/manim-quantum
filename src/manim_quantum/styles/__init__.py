@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from manim import BLUE, GRAY, RED, TEAL, WHITE, YELLOW
+
+if TYPE_CHECKING:
+    from manim_quantum.circuits.circuit import QuantumCircuit
 
 
 @dataclass

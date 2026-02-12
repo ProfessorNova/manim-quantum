@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from manim import (
+    DEGREES,
     ORIGIN,
     PI,
     Arrow3D,
@@ -115,8 +116,8 @@ class BlochSphere(VGroup):
                 self.radius * np.sin(v) * np.sin(u),
                 self.radius * np.cos(v),
             ]),
-            u_range=[0, 2 * PI],
-            v_range=[0, PI],
+            u_range=(0, 2 * PI),
+            v_range=(0, PI),
             resolution=(32, 16),
         )
         sphere.set_fill(self.style.sphere_color, opacity=self.style.sphere_opacity)
@@ -130,24 +131,24 @@ class BlochSphere(VGroup):
 
         # X axis (red)
         x_axis = Line3D(
-            start=[-r, 0, 0],
-            end=[r, 0, 0],
+            start=np.array([-r, 0, 0]),
+            end=np.array([r, 0, 0]),
             color=self.style.axis_color,
         )
         axes.add(x_axis)
 
         # Y axis (green)
         y_axis = Line3D(
-            start=[0, -r, 0],
-            end=[0, r, 0],
+            start=np.array([0, -r, 0]),
+            end=np.array([0, r, 0]),
             color=self.style.axis_color,
         )
         axes.add(y_axis)
 
         # Z axis (blue)
         z_axis = Line3D(
-            start=[0, 0, -r],
-            end=[0, 0, r],
+            start=np.array([0, 0, -r]),
+            end=np.array([0, 0, r]),
             color=self.style.axis_color,
         )
         axes.add(z_axis)
@@ -161,23 +162,23 @@ class BlochSphere(VGroup):
 
         # Basis state labels
         label_0 = MathTex("|0\\rangle", color=self.style.ket_color)
-        label_0.move_to([0, 0, r])
+        label_0.move_to(np.array([0, 0, r]))
         labels.add(label_0)
         self._label_mobjects.append(label_0)
 
         label_1 = MathTex("|1\\rangle", color=self.style.ket_color)
-        label_1.move_to([0, 0, -r])
+        label_1.move_to(np.array([0, 0, -r]))
         labels.add(label_1)
         self._label_mobjects.append(label_1)
 
         # Axis labels
         x_label = MathTex("X", color=self.style.axis_color)
-        x_label.move_to([r, 0, 0])
+        x_label.move_to(np.array([r, 0, 0]))
         labels.add(x_label)
         self._label_mobjects.append(x_label)
 
         y_label = MathTex("Y", color=self.style.axis_color)
-        y_label.move_to([0, r, 0])
+        y_label.move_to(np.array([0, r, 0]))
         labels.add(y_label)
         self._label_mobjects.append(y_label)
 

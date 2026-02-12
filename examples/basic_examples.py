@@ -14,7 +14,6 @@ from manim import (
     LEFT,
     RIGHT,
     UP,
-    Create,
     FadeIn,
     FadeOut,
     MathTex,
@@ -59,12 +58,12 @@ class BellStateCircuit(Scene):
         circuit.build()
 
         # Position and show circuit (no default offset)
-        self.play(Create(circuit), run_time=2)
+        self.play(Write(circuit), run_time=2)
         self.wait(0.5)
 
         # Use the animations module for circuit evaluation
         anim = CircuitEvaluationAnimation(circuit)
-        self.play(anim.create_glow_animation(run_time=1.5))
+        self.play(anim.create_shot_animation(run_time=1.5))
         self.wait()
 
 
@@ -173,50 +172,6 @@ class BlochSphereDemo(ThreeDScene):
         self.wait(2)
 
 
-class QuantumTeleportation(Scene):
-    """
-    Demonstrates the quantum teleportation circuit.
-
-    Shows a complete 3-qubit teleportation protocol with:
-    - Bell pair preparation
-    - Bell measurement
-    - Classical corrections
-    """
-
-    def construct(self):
-        # Title
-        title = Text("Quantum Teleportation Protocol", font_size=36)
-        title.to_edge(UP)
-        self.play(Write(title))
-
-        # Create circuit
-        circuit = QuantumCircuit(
-            num_qubits=3,
-            wire_labels=["|\\psi\\rangle", "|0\\rangle", "|0\\rangle"],
-        )
-
-        # Bell pair preparation (qubits 1 and 2)
-        circuit.add_gate("H", [1])
-        circuit.add_gate("CNOT", [1, 2])
-
-        # Bell measurement (qubits 0 and 1)
-        circuit.add_gate("CNOT", [0, 1])
-        circuit.add_gate("H", [0])
-        circuit.add_gate("Measure", [0])
-        circuit.add_gate("Measure", [1])
-
-        # Build and display (no default offset)
-        circuit.build()
-
-        self.play(Create(circuit), run_time=3)
-        self.wait()
-
-        # Use the animations module
-        anim = CircuitEvaluationAnimation(circuit)
-        self.play(anim.create_glow_animation(run_time=2))
-        self.wait()
-
-
 class StyleShowcase(Scene):
     """
     Demonstrates different visual styles.
@@ -252,7 +207,7 @@ class StyleShowcase(Scene):
             circuits.append((circuit, label))
 
         for circuit, label in circuits:
-            self.play(Create(circuit), Write(label), run_time=1)
+            self.play(Write(circuit), Write(label), run_time=1)
 
         self.wait(2)
 
