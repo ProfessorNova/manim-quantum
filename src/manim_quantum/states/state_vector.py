@@ -11,7 +11,6 @@ from manim import (
     RIGHT,
     MathTex,
     Rectangle,
-    Text,
     VGroup,
 )
 
@@ -64,8 +63,6 @@ class StateVector(VGroup):
 
     def _build(self) -> None:
         """Build the state vector visualization."""
-        n_states = len(self.amplitudes)
-
         if self.show_probabilities:
             self._build_probability_bars()
         else:
@@ -98,20 +95,14 @@ class StateVector(VGroup):
 
         if not terms:
             # Zero state
-            if use_latex:
-                zero_label = MathTex("0", color=self.style.amplitude_color)
-            else:
-                zero_label = Text("0", color=self.style.amplitude_color)
+            zero_label = MathTex("0", color=self.style.amplitude_color)
             terms.append(zero_label)
 
         # Arrange terms with + signs
         full_expr = VGroup()
         for i, term in enumerate(terms):
             if i > 0:
-                if use_latex:
-                    plus = MathTex("+", color=self.style.amplitude_color)
-                else:
-                    plus = Text("+", color=self.style.amplitude_color)
+                plus = MathTex("+", color=self.style.amplitude_color)
                 plus.scale(0.8)
                 full_expr.add(plus)
             full_expr.add(term)
@@ -171,7 +162,8 @@ class StateVector(VGroup):
         bar_group.arrange(DOWN, buff=0.2, aligned_edge=RIGHT)
         self.add(bar_group)
 
-    def _format_amplitude(self, amp: complex) -> str:
+    @staticmethod
+    def _format_amplitude(amp: complex) -> str:
         """Format a complex amplitude for display."""
         real = amp.real
         imag = amp.imag
